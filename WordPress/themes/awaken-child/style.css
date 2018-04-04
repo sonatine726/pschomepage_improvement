@@ -39,11 +39,11 @@ ul.similar-posts li:before {/*疑似要素*/
   left : -1.5em; /*左端からのアイコンまで*/
   color: skyblue; /*アイコン色*/
 }
-.site-main h2{
+body[class*="page-id-"] h2{
   border-bottom: solid 3px #ffc778;
   position: relative;
 }
-.site-main h2:after {
+body[class*="page-id-"] h2:after {
   position: absolute;
   content: " ";
   display: block;

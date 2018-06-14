@@ -589,8 +589,7 @@ class YotuWP{
 		$html     = $this->template( $atts['template'], $data, $atts_tmp);
 		$settings = array();
 
-    $key_names = array('next', 'prev');
-    foreach ($key_names as $key) {
+		foreach (['next', 'prev'] as $key) {
 			$settings[ $key] = isset( $atts[ $key] ) ? $atts[ $key]: '';
 		}
 

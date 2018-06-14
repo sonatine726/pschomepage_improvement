@@ -12,7 +12,7 @@
 
 }
 
-[data-icon]:before {
+.yotuwp [data-icon]:before {
   font-family: "yotu" !important;
   content: attr(data-icon);
   font-style: normal !important;

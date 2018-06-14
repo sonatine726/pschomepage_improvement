@@ -8,7 +8,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Modern responsive YouTube video gallery. Easy embed videos from YouTube playlist, channel and videos IDs to your WordPress website.
+Increase your Audience Engagement with modern responsive YouTube video gallery. Easy adding videos from YouTube playlist, channel and videos IDs to your website.
 
 == Description ==
 >[Home Page](https://www.yotuwp.com/ "YotuWP Landingpage") | [View Demo](https://www.yotuwp.com/demo/ "Demo YotuWP") | [Document](https://www.yotuwp.com/document/) | [Contact & Support](https://www.yotuwp.com/contact/ "Contact & Support")
@@ -77,13 +77,34 @@ Allow you generate shortcode YotuWP to use on page builders, widgets, product de
 3. Go to menu YotuWP to set the default values for layout, player and enter your YouTube API key as well.
 4. Edit your page/post/custom post then click on YotuWP button to start insert shortcode with winzard embed.
 
+= How to get a YouTube Data API Key? =
+
+Please folllow [get Youtube API](https://www.yotuwp.com/how-to-get-youtube-api-key/) instructions.
+
+= How to turn on popup modal player? =
+
+Please go to setting tab YotuWP > General > Player > Player Mode
+Then select option Popup then press Save Change and try out it.
+
+= How to display full-width player? =
+
+Please go to setting tab YotuWP > General > Player > Player width
+Then enter value 0 then press Save Change and try out it.
 
 == Changelog ==
+
+= 1.3 - May 31th, 2018 =
+* [New] New panel setting layout.
+* [Add] Video thumbnail Styling.
+* [Modify] Remove Private video
+
 = 1.2.7 - Mar 29th, 2018 =
 * [Fix] Fix videos warning code
 * [Fix] Fix 1 column grid
 * [Fix] Fix Mix layout
 * [Fix] Mobile touch
+* [Fix] IE 11 play problem
+* [Fix] Safari display
 
 = 1.2.6 - Feb 24th, 2018 =
 * [Fix] Fix languages support

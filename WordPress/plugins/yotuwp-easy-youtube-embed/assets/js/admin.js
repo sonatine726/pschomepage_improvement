@@ -1,10 +1,15 @@
 
 (function($){
+
+	
+
 	window.yotu_wp = {
 
 		parse_data : {},
 
 		init : function (){
+
+			window.addEventListener('message', yotu_wp.sys_msg);
 			
 			jQuery('.yotu-tabs').each(function (indx){
 				var tabs = jQuery(this),
@@ -12,13 +17,18 @@
 					
 				tabs.find('a').on('click', function (e){
 					e.preventDefault();
-					var that = jQuery(this),
-						tab = that.data('tab'),
-						yotu = that.data('yotu');
+					var that 	= jQuery(this),
+						tab 	= that.data('tab'),
+						yotu 	= that.data('yotu');
+						cli = jQuery(this).closest('li');
+
 					tabs_content.find('.yotu-tab-content').css({display: 'none'});
+
 					jQuery('#yotu-tab-' + tab).css({display: 'block'});
-					tabs.find('li').removeClass('yotu-active');
-					jQuery(this).closest('li').addClass('yotu-active');
+					tabs.find('li').removeClass('yotu-active nextactive prevactive');
+					cli.addClass('yotu-active');
+					cli.next().addClass('nextactive');
+					cli.prev().addClass('prevactive');
 
 					if(yotu === 'insert'){
 						jQuery('.yotu_insert_popup').data('type', tab);
@@ -26,6 +36,20 @@
 						jQuery('.yotu_insert_popup .yotu-actions').addClass('yotu-hidden');
 					}
 				});
+			});
+
+			jQuery('.yotu-field [data-func]').on( 'click', function (e) {
+				e.preventDefault();
+
+				var action = this.getAttribute('data-func');
+
+				switch( action ){
+					case 'preset':
+						var field = this.getAttribute('data-preset');
+							installed = $(this).data('installed');
+						yotu_wp.presets.load(field, installed);
+					break;
+				}
 			});
 
 			$('#shortcode_val').click(function () {
@@ -94,13 +118,22 @@
 						data.valid && 
 						data.type == type
 					){
-						yotu_wp.ajax(that, {type: type, data: data.id});
+						yotu_wp.ajax(
+							that,
+							{
+								type	: type,
+								data	: data.id,
+								action 	: 'yotu_getinfo'
+							}, 
+							yotu_wp.actions.search_result 
+						);
 					}else alert('Please enter correct URL to start getting info.');
 				});
 				
 			});
 			
 			jQuery('#yotu-settings-handler').on('click', yotu_wp.actions.show_settings);
+			
 
 			$('label.yotu-field-radios').on('click', function(e){
 				var wrp = $(this).closest('.yotu-radios-img');
@@ -168,6 +201,43 @@
 				}
 			});
 			
+		},
+
+		sys_msg : function (e) {
+			
+			if( 
+				typeof e.data == 'object' 
+				&& typeof e.data['action'] !== 'undefined' 
+			) {
+				switch( e.data.action ) {
+					case 'install_preset' : 
+						yotu_wp.presets.install(e.data);
+					break;
+
+					case 'error':
+						yotu_wp.show_message();
+					break;
+				}
+			}
+		},
+
+		msg : {
+			elm : null,
+			show : function ( msg ) {
+				if( yotu_wp.msg.elm === null ){
+					yotu_wp.msg.elm = jQuery('<div class="yotuwp-message">\
+						<a href="yotuwp-msg-close">x</a>\
+						<div class="yotuwp-msg-content"></div>\
+					</div>');
+					yotu_wp.msg.appendTo('body');
+				}
+				yotu_wp.msg.elm.find('.yotuwp-msg-content').html( msg );
+				yotu_wp.msg.elm.addClass('yotuwp-show-msg');
+			},
+
+			close : function () {
+				if( yotu_wp.msg.elm !== null ) yotu_wp.msg.elm.removeClass('yotuwp-show-msg');
+			}
 		},
 
 		get_params : function (){
@@ -288,25 +358,20 @@
 			return params;
 		},
 
-		ajax : function (wrp, obj){
+		ajax : function (wrp, obj, func){
 			var error = function (code){
-					var txt = '';
-					switch(code) {
-						case 403:
-							text = yotujs.lang['01'];
-							break;
-						case 404:
-							text = yotujs.lang['03'];
-							break;
-					}
-					
-					if(text !== '') alert(txt);
-
-					load_more.removeClass('yotu-active');
-				},
-				is_shortcode_gen = wrp.closest('.shortcode_gen');
-
-			obj.action = 'yotu_getinfo';
+				var txt = '';
+				switch(code) {
+					case 403:
+						text = yotujs.lang['01'];
+						break;
+					case 404:
+						text = yotujs.lang['03'];
+						break;
+				}
+				
+				if(text !== '') alert(txt);
+			};
 
 			jQuery('.yotu_insert_popup .yotu-info-res').addClass('yotu-active');
 
@@ -323,46 +388,8 @@
 					404: function(){
 						error(404);
 					},
-					200: function(data) {
-						var html = '<h4 class="light">'+yotujs.lang[4]+'</h4>';
-
-						if(data.items.length > 0){
-							data.items.map(function (item){
-								html += '<div class="yotu-result">\
-									<div class="yotu-item-thumb"><img src="' +item.snippet.thumbnails.default.url+ '"/></div>\
-									<div class="yotu-item-title">' +item.snippet.title+ '</div>\
-									<div class="yotu-item-desc">' +item.snippet.description+ '</div>\
-								</div>';
-							});
-
-							jQuery('.yotu_insert_popup .yotu-actions').removeClass('yotu-hidden');
-
-							yotu_wp.insert = {
-								type : obj.type,
-								id : obj.id
-							}
-						}else if(
-							typeof data['error'] !== 'undefined' &&
-							data.error === true &&
-							data.msg !==''
-						){
-							html = '<p><strong>Error</strong>: '+data.msg+'</p>';
-						}else{
-							html = '<p>Items not found, please check your url again.</p>';
-						}
-
-						if(is_shortcode_gen.get(0)){
-							var gen = function (){
-									params = yotu_wp.get_params();
-									jQuery('#shortcode_val').val('[yotuwp type="' + yotu_wp.parse_data.type + '" id="' + yotu_wp.parse_data.id + '" ' +params.join(' ') + ']');
-								};
-							gen();
-							jQuery('.yotu-layout .yotu-param').off().on('change', function(){
-								gen();
-							})
-
-						}
-						jQuery('.yotu_insert_popup .yotu-info-res').html(html).removeClass('yotu-active');
+					200: function ( data ){
+						func( data, wrp, obj);
 					}
 				}
 			});
@@ -437,6 +464,90 @@
 			 
 			return parsedUrl;
 		},
+
+		presets : {
+
+			elm : null,
+
+			load : function ( field, installed = '' ){
+				var that = this,
+					ifurl = 'https://api.yotuwp.com/presets/?action=load&part='+ field +'&installed=' + installed;
+				if( this.elm === null ) {
+					
+					this.elm = jQuery('<div class="yotuwp-presets-popup">\
+						<div class="yotuwp-popup-wrp-content">\
+							<div class="yotuwp-popup-title">Presets</div>\
+							<a href="#" class="yotuwp-popup-close">Close</a>\
+							<div class="yotuwp-popup-content"><iframe id="ifpresets" src="" width="100%" height="100%"></iframe></div>\
+						</div>\
+					</div>');
+					this.elm.find('.yotuwp-popup-close').on('click', that.close);
+					this.elm.appendTo('body');
+				}
+				console.log(ifurl);
+				that.elm.find('iframe').attr({src: ifurl});
+				that.elm.addClass('yotuwp-active');
+			},
+
+			close : function (e) {
+				console.log('close');
+				e.preventDefault();
+				yotu_wp.presets.elm.removeClass('yotuwp-active');
+			},
+
+			install : function (data){
+
+				var obj = {
+					'action' : 'install_presets',
+					'data' : data,
+					'field' : data.field
+				};
+
+				$.ajax({
+
+					url: yotujs.ajax_url + '?'+Math.random(),
+					type: 'POST',
+					dataType: 'json',
+					data: obj,
+					statusCode : {
+						403: function (){
+							error(403);
+						},
+						404: function(){
+							error(404);
+						},
+						200: function ( res ){
+
+							var new_elm = jQuery('<label class="yotu-field-radios" for="yotu-styling-' + data.field + '-' + data.data.slug + '">\
+								<input class="yotu-param" value="' + data.data.slug + '" type="radio" id="yotu-styling-' + data.field + '-' + data.data.slug + '" name="yotu-styling[' + data.field + ']">\
+								<img src="' + data.data.thumbnail + '" alt="' + data.data.name + '" title="' + data.data.name + '">\
+								<br><span>' + data.data.name + '</span>\
+								</label>'),
+								installed = $('#yotuwp-field-'+data.field).find('[data-preset]').data('installed')
+
+							installed += ',' + data.data.slug;
+
+							$('#yotuwp-field-'+data.field).find('.yotu-radios-img').append( new_elm );
+							
+
+							$('#yotuwp-field-'+data.field).find('[data-preset]').data('installed', installed);
+							new_elm.on('click', function(e){
+								var wrp = $(this).closest('.yotu-radios-img');
+								wrp.find('.yotu-field-radios-selected').removeClass('yotu-field-radios-selected');
+								$(this).addClass('yotu-field-radios-selected');
+							});
+
+							var msg = {
+								'action' : 'installed',
+								'field' : data.field,
+								'slug' : data.data.slug
+							};
+							window.ifpresets.contentWindow.postMessage(msg, '*');
+						}
+					}
+				});
+			}
+		},
 		
 		actions : {
 			
@@ -445,6 +556,50 @@
 					jQuery('.yotu-layout').addClass('yotu-hidden');
 				else
 					jQuery('.yotu-layout').removeClass('yotu-hidden');
+			},
+
+			search_result: function ( data, wrp, obj ) {
+
+				var html = '<h4 class="light">' + yotujs.lang[4] + '</h4>',
+					is_shortcode_gen = wrp.closest('.shortcode_gen')
+
+				if (data.items.length > 0) {
+					data.items.map(function (item) {
+						html += '<div class="yotu-result">\
+									<div class="yotu-item-thumb"><img src="' + item.snippet.thumbnails.default.url + '"/></div>\
+									<div class="yotu-item-title">' + item.snippet.title + '</div>\
+									<div class="yotu-item-desc">' + item.snippet.description + '</div>\
+								</div>';
+					});
+
+					jQuery('.yotu_insert_popup .yotu-actions').removeClass('yotu-hidden');
+
+					yotu_wp.insert = {
+						type: obj.type,
+						id: obj.id
+					}
+				} else if (
+					typeof data['error'] !== 'undefined' &&
+					data.error === true &&
+					data.msg !== ''
+				) {
+					html = '<p><strong>Error</strong>: ' + data.msg + '</p>';
+				} else {
+					html = '<p>Items not found, please check your url again.</p>';
+				}
+
+				if (is_shortcode_gen.get(0)) {
+					var gen = function () {
+						params = yotu_wp.get_params();
+						jQuery('#shortcode_val').val('[yotuwp type="' + yotu_wp.parse_data.type + '" id="' + yotu_wp.parse_data.id + '" ' + params.join(' ') + ']');
+					};
+					gen();
+					jQuery('.yotu-layout .yotu-param').off().on('change', function () {
+						gen();
+					})
+
+				}
+				jQuery('.yotu_insert_popup .yotu-info-res').html(html).removeClass('yotu-active');
 			}
 			
 		}
